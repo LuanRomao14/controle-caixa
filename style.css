@@ -132,10 +132,6 @@ input {
     border: 1px solid var(--line);
 }
 
-input[type="date"] {
-    color-scheme: dark;
-}
-
 select:focus,
 input:focus,
 button:focus-visible {
@@ -328,23 +324,8 @@ table input[type="checkbox"] {
     min-height: 0;
 }
 
-#t-saidas {
-    min-width: 980px;
-}
-
-tr.linha-atrasada td {
-    background: rgba(244, 63, 94, 0.08);
-}
-
-tr.linha-atrasada .txt-venc {
-    color: var(--red);
-}
-
 .col-valor { width: 140px; }
 .col-tipo { width: 150px; }
-.col-cat { width: 150px; }
-.col-data { width: 150px; }
-.col-parc { width: 90px; }
 .col-centro {
     width: 80px;
     text-align: center;
