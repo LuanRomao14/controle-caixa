@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Slim - V4</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <main class="container">
+        <header class="barra-topo">
+            <div>
+                <p class="eyebrow">Painel mensal</p>
+                <h1>Controle de Caixa</h1>
+                <p id="aviso-backup" class="aviso-backup" role="status"></p>
+            </div>
+
+            <div class="acoes-topo" role="group" aria-label="Ações do controle financeiro">
+                <button type="button" class="btn btn-success" id="btn-exportar">Exportar banco</button>
+                <button type="button" class="btn btn-info" id="btn-importar">Importar banco</button>
+                <input type="file" id="file-input" accept=".json,application/json" hidden>
+                <button type="button" class="btn btn-teal" id="btn-copiar">Copiar mês anterior</button>
+                <select id="sel-ano" aria-label="Selecionar ano"></select>
+                <select id="sel-mes" aria-label="Selecionar mês"></select>
+                <button type="button" class="btn btn-purple" id="btn-zip">Baixar projeto (ZIP)</button>
+            </div>
+        </header>
+
+        <section class="grid-resumos" aria-label="Resumo financeiro">
+            <article class="card card-entradas">
+                <span class="card-tit">Entradas</span>
+                <strong class="card-val" id="res-entradas">R$ 0,00</strong>
+            </article>
+            <article class="card card-pagos">
+                <span class="card-tit">Pago</span>
+                <strong class="card-val" id="res-pagos">R$ 0,00</strong>
+                <small class="card-sub" id="res-pagos-sub"></small>
+            </article>
+            <article class="card card-reserva">
+                <span class="card-tit">Reserva Acumulada</span>
+                <strong class="card-val" id="res-reserva">R$ 0,00</strong>
+                <small class="card-sub" id="res-reserva-sub"></small>
+            </article>
+            <article class="card card-investido">
+                <span class="card-tit">Investido Acumulado</span>
+                <strong class="card-val" id="res-investido">R$ 0,00</strong>
+                <small class="card-sub" id="res-investido-sub"></small>
+            </article>
+            <article class="card card-final" id="card-final">
+                <span class="card-tit">Saldo Final</span>
+                <strong class="card-val" id="res-saldo-final">R$ 0,00</strong>
+                <small class="card-sub" id="res-saldo-sub"></small>
+            </article>
+            <article class="card card-previsto">
+                <span class="card-tit">Saldo Previsto</span>
+                <strong class="card-val" id="res-saldo-previsto">R$ 0,00</strong>
+                <small class="card-sub" id="res-previsto-sub"></small>
+            </article>
+        </section>
+
+        <section class="grid-conteudo">
+            <div class="lista-blocos">
+                <section class="bloco">
+                    <div class="bloco-hdr">
+                        <h2>Entradas</h2>
+                        <button type="button" class="btn-add" data-tipo="entradas">Adicionar</button>
+                    </div>
+                    <div class="tabela-wrap">
+                        <table id="t-entradas">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th class="col-valor">Valor</th>
+                                    <th class="col-centro">Fixa</th>
+                                    <th class="col-acoes"><span class="sr-only">Ações</span></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-hdr">
+                        <h2>Saídas</h2>
+                        <button type="button" class="btn-add" data-tipo="saidas">Adicionar</button>
+                    </div>
+                    <div class="tabela-wrap">
+                        <table id="t-saidas">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th class="col-valor">Valor</th>
+                                    <th class="col-cat">Categoria</th>
+                                    <th class="col-data">Vencimento</th>
+                                    <th class="col-parc">Parcela</th>
+                                    <th class="col-centro">Fixa</th>
+                                    <th class="col-centro">Status</th>
+                                    <th class="col-acoes"><span class="sr-only">Ações</span></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <datalist id="lista-categorias"></datalist>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-hdr">
+                        <h2>Investimentos do Mês</h2>
+                        <button type="button" class="btn-add" data-tipo="investimentos">Adicionar</button>
+                    </div>
+                    <div class="tabela-wrap">
+                        <table id="t-investimentos">
+                            <thead>
+                                <tr>
+                                    <th>Destino</th>
+                                    <th class="col-valor">Valor</th>
+                                    <th class="col-tipo">Tipo</th>
+                                    <th class="col-acoes"><span class="sr-only">Ações</span></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="bloco grafico-bloco" aria-label="Visão geral do mês">
+                <div class="bloco-hdr bloco-hdr-center">
+                    <h2>Visão Geral do Mês</h2>
+                </div>
+                <div class="grafico-wrap">
+                    <canvas id="grafico" role="img" aria-label="Gráfico de pago, aberto, reserva e investido do mês"></canvas>
+                </div>
+                <p class="grafico-vazio" id="grafico-vazio" hidden>Sem valores neste mês.</p>
+                <p class="grafico-nota">O gráfico mostra os valores do mês; os cards de Reserva e Investido mostram o acumulado.</p>
+            </aside>
+        </section>
+
+        <details class="bloco bloco-anual" id="bloco-anual">
+            <summary><h2 id="titulo-anual">Visão anual</h2></summary>
+            <div class="tabela-wrap">
+                <table id="t-anual" class="tabela-anual">
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th class="num">Entradas</th>
+                            <th class="num">Pago</th>
+                            <th class="num">Em aberto</th>
+                            <th class="num">Reserva</th>
+                            <th class="num">Investido</th>
+                            <th class="num">Saldo do mês</th>
+                            <th class="num">Saldo acumulado</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot></tfoot>
+                </table>
+            </div>
+            <div class="grafico-anual-wrap">
+                <canvas id="grafico-anual" role="img" aria-label="Gráfico anual de entradas, saídas e valores guardados por mês"></canvas>
+            </div>
+        </details>
+    </main>
+
+    <div id="aviso" class="aviso" role="status" aria-live="polite"></div>
+
+    <div id="modal-confirm" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
+        <div class="modal-box">
+            <h2 class="modal-title" id="modal-title">Confirmar exclusão</h2>
+            <p class="modal-desc" id="modal-desc">Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal btn-cancel" id="btn-cancelar-del">Cancelar</button>
+                <button type="button" id="btn-confirmar-del" class="btn-modal btn-confirm">Excluir</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
