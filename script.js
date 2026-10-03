@@ -12,15 +12,9 @@ const MESES = [
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 
-const CATEGORIAS = [
-    "Moradia", "Alimentação", "Transporte", "Saúde", "Educação",
-    "Lazer", "Dívidas", "Impostos", "Outros",
-];
-
 const STORAGE_PREFIX = "fin_";
 const META_BACKUP = "finmeta_ultimoBackup";
 const CHAVE_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
-const DATA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DIGITOS = 12;
 const DIAS_ALERTA_BACKUP = 7;
 
@@ -60,22 +54,10 @@ function iniciarAplicacao() {
     mesChave = criarChaveMes(hoje.getFullYear(), hoje.getMonth() + 1);
     carregarMes(mesChave);
 
-    popularCategorias();
     sincronizarSeletores();
     registrarEventosFixos();
     renderizarTudo();
     atualizarAvisoBackup();
-}
-
-function popularCategorias() {
-    const lista = document.getElementById("lista-categorias");
-    if (!lista) return;
-
-    lista.replaceChildren(...CATEGORIAS.map((cat) => {
-        const option = document.createElement("option");
-        option.value = cat;
-        return option;
-    }));
 }
 
 function registrarEventosFixos() {
@@ -161,20 +143,6 @@ function nomeDoMes(chave) {
     return `${MESES[mes - 1]} / ${ano}`;
 }
 
-function deslocarData(venc, chaveNova) {
-    if (!venc || !DATA_ISO.test(venc)) return "";
-
-    const dia = Number(venc.slice(8, 10));
-    const [ano, mes] = chaveNova.split("-").map(Number);
-    const diasNoMes = new Date(ano, mes, 0).getDate();
-
-    return `${chaveNova}-${String(Math.min(dia, diasNoMes)).padStart(2, "0")}`;
-}
-
-function estaAtrasada(saida) {
-    return !saida.pago && DATA_ISO.test(saida.venc || "") && saida.venc < hojeISO();
-}
-
 /* ---------- Seletores de ano/mês ---------- */
 
 function anosDisponiveis() {
@@ -220,10 +188,7 @@ function irParaMes(chave) {
 function criarMesPadrao() {
     return {
         entradas: [{ desc: "Minha Renda", valor: 0, fixa: false }],
-        saidas: [{
-            desc: "Contas Fixas", valor: 0, fixa: true, pago: false,
-            cat: "", venc: "", parcAtual: 0, parcTotal: 0,
-        }],
+        saidas: [{ desc: "Contas Fixas", valor: 0, fixa: true, pago: false }],
         investimentos: [],
     };
 }
@@ -231,10 +196,7 @@ function criarMesPadrao() {
 function novoItem(tipo) {
     const modelos = {
         entradas: { desc: "Nova Entrada", valor: 0, fixa: false },
-        saidas: {
-            desc: "Nova Conta", valor: 0, fixa: false, pago: false,
-            cat: "", venc: "", parcAtual: 0, parcTotal: 0,
-        },
+        saidas: { desc: "Nova Conta", valor: 0, fixa: false, pago: false },
         investimentos: { desc: "Novo Aporte", valor: 0, tipo: "reserva" },
     };
     return modelos[tipo];
@@ -266,23 +228,11 @@ function normalizarEntrada(item) {
 }
 
 function normalizarSaida(item) {
-    let parcAtual = Math.trunc(Number(item?.parcAtual)) || 0;
-    let parcTotal = Math.trunc(Number(item?.parcTotal)) || 0;
-
-    if (parcTotal < 1 || parcAtual < 1 || parcAtual > parcTotal) {
-        parcAtual = 0;
-        parcTotal = 0;
-    }
-
     return {
         desc: String(item?.desc || ""),
         valor: paraCentavos(item?.valor),
         fixa: Boolean(item?.fixa),
         pago: Boolean(item?.pago),
-        cat: String(item?.cat || "").slice(0, 30),
-        venc: DATA_ISO.test(item?.venc || "") ? item.venc : "",
-        parcAtual,
-        parcTotal,
     };
 }
 
@@ -413,7 +363,7 @@ function criarMesDerivado(chave) {
     const base = cacheHistorico[anterior];
     const entradas = base.entradas.filter((e) => e.fixa).map((e) => ({ ...e }));
     const saidas = base.saidas
-        .map((s) => proximaSaida(s, chave, false))
+        .map((s) => proximaSaida(s, false))
         .filter(Boolean);
 
     return {
@@ -423,27 +373,16 @@ function criarMesDerivado(chave) {
     };
 }
 
-// Fixas e parcelas em andamento seguem para o mês novo.
+// Só as saídas fixas seguem para o mês novo.
 // copiarTudo = true (botão "Copiar mês anterior") leva também as contas avulsas.
-function proximaSaida(saida, chave, copiarTudo) {
-    let { parcAtual, parcTotal } = saida;
-
-    if (parcTotal > 0) {
-        if (parcAtual >= parcTotal) return null;
-        parcAtual += 1;
-    } else if (!saida.fixa && !copiarTudo) {
-        return null;
-    }
+function proximaSaida(saida, copiarTudo) {
+    if (!saida.fixa && !copiarTudo) return null;
 
     return {
         desc: saida.desc || "Conta fixa",
         valor: saida.valor,
         fixa: saida.fixa,
         pago: false,
-        cat: saida.cat,
-        venc: deslocarData(saida.venc, chave),
-        parcAtual,
-        parcTotal,
     };
 }
 
@@ -457,7 +396,7 @@ function solicitarCopiaMesAnterior() {
 
     abrirModal({
         titulo: "Copiar mês anterior",
-        descricao: `Copiar entradas, saídas e investimentos de ${nomeDoMes(anterior)} para este mês? As parcelas avançam uma e itens com a mesma descrição que já existem aqui são ignorados.`,
+        descricao: `Copiar entradas, saídas e investimentos de ${nomeDoMes(anterior)} para este mês? Itens com a mesma descrição que já existem aqui são ignorados.`,
         textoConfirmar: "Copiar",
         perigo: false,
         onConfirm: () => copiarMesAnterior(anterior),
@@ -481,7 +420,7 @@ function copiarMesAnterior(chaveOrigem) {
 
     origem.saidas.forEach((s) => {
         if (jaExiste("saidas", s.desc)) return;
-        const nova = proximaSaida(s, mesChave, true);
+        const nova = proximaSaida(s, true);
         if (!nova) return;
         dadosEstado.saidas.push(nova);
         copiados++;
@@ -765,25 +704,6 @@ function centavosDeTexto(texto) {
     return digitos ? Number.parseInt(digitos, 10) : 0;
 }
 
-function textoParcela(saida) {
-    return saida.parcTotal > 0 ? `${saida.parcAtual}/${saida.parcTotal}` : "";
-}
-
-function interpretarParcela(texto) {
-    const vazio = { atual: 0, total: 0 };
-    const trecho = String(texto).trim();
-    if (!trecho) return { ...vazio, valido: true };
-
-    const m = trecho.match(/^(\d{1,3})\s*\/\s*(\d{1,3})$/);
-    if (!m) return { ...vazio, valido: false };
-
-    const atual = Number(m[1]);
-    const total = Number(m[2]);
-    if (total < 1 || atual < 1 || atual > total) return { ...vazio, valido: false };
-
-    return { atual, total, valido: true };
-}
-
 /* ---------- Cálculos (tudo em centavos) ---------- */
 
 function somar(lista = []) {
@@ -909,47 +829,6 @@ function criarLinha(tipo, item, index) {
     }
 
     if (tipo === TIPOS.saidas) {
-        tr.appendChild(criarCelulaInput({
-            className: "txt-cat",
-            value: item.cat,
-            label: `Categoria (${rotulo})`,
-            attrs: { list: "lista-categorias", maxlength: "30", placeholder: "Categoria", autocomplete: "off" },
-            onEvento: (valor) => {
-                item.cat = valor.trim();
-                agendarSalvar();
-            },
-        }));
-
-        tr.appendChild(criarCelulaInput({
-            type: "date",
-            className: "txt-venc",
-            value: item.venc,
-            label: `Vencimento (${rotulo})`,
-            evento: "change",
-            onEvento: (valor) => {
-                item.venc = DATA_ISO.test(valor) ? valor : "";
-                marcarAtraso(tr, item);
-                salvarImediatamente();
-            },
-        }));
-
-        tr.appendChild(criarCelulaInput({
-            className: "txt-parc",
-            value: textoParcela(item),
-            label: `Parcela atual/total (${rotulo})`,
-            evento: "change",
-            attrs: { placeholder: "2/10", maxlength: "7", title: "Parcela atual/total, ex.: 2/10", autocomplete: "off" },
-            onEvento: (valor, input) => {
-                const parcela = interpretarParcela(valor);
-                if (!parcela.valido) mostrarAviso("Use o formato atual/total, por exemplo 2/10.", "info");
-
-                item.parcAtual = parcela.atual;
-                item.parcTotal = parcela.total;
-                input.value = textoParcela(item);
-                salvarImediatamente();
-            },
-        }));
-
         tr.appendChild(criarCelulaCheckbox({
             className: "chk-fixa",
             texto: "Fixa",
@@ -975,13 +854,10 @@ function criarLinha(tipo, item, index) {
                 label.classList.toggle("c-pago", checked);
                 label.classList.toggle("c-open", !checked);
 
-                marcarAtraso(tr, item);
                 salvarImediatamente();
                 atualizarInterfaceMetricas();
             },
         }));
-
-        marcarAtraso(tr, item);
     }
 
     if (tipo === TIPOS.investimentos) {
@@ -994,10 +870,6 @@ function criarLinha(tipo, item, index) {
 
     tr.appendChild(criarCelulaExcluir(tipo, index, rotulo));
     return tr;
-}
-
-function marcarAtraso(tr, saida) {
-    tr.classList.toggle("linha-atrasada", estaAtrasada(saida));
 }
 
 function criarCelulaInput({ type = "text", className, value, label, evento = "input", attrs = {}, onEvento }) {
