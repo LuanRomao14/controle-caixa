@@ -173,6 +173,8 @@ button:focus-visible {
 .card-reserva .card-val { color: var(--orange); }
 .card-investido { border-left-color: var(--purple); }
 .card-investido .card-val { color: var(--purple); }
+.card-disponivel { border-left-color: var(--blue); }
+.card-disponivel .card-val { color: var(--blue); }
 .card-final { border-left-color: var(--primary); }
 .card-previsto { border-left-color: var(--teal); }
 
@@ -592,4 +594,14 @@ table input[type="checkbox"] {
     .modal-actions {
         flex-direction: column-reverse;
     }
+}
+
+.resumo-saidas {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    color: var(--sub);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
 }
