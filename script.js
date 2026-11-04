@@ -941,6 +941,7 @@ function criarCelulaExcluir(tipo, index, rotulo) {
 
 function atualizarInterfaceMetricas() {
     const r = calcularMetricasFinanceiras();
+    const saldoPrevisto = r.saldoAcumulado - r.abertos;
 
     definirTexto("res-entradas", fmt(r.entradas));
     definirTexto("res-pagos", fmt(r.pagos));
@@ -950,23 +951,13 @@ function atualizarInterfaceMetricas() {
     definirTexto("res-investido", fmt(r.investidoAcumulado));
     definirTexto("res-investido-sub", `No mês: ${fmt(r.investido)}`);
 
-    const disponivel = r.saldoAnterior + r.entradas;
-    const saldoAtual = r.saldoAcumulado;        // disponível − pago − reserva − investido
-    const saldoFinal = saldoAtual - r.abertos;  // saldo atual − contas em aberto
+    definirSaldo("res-saldo-final", r.saldoAcumulado);
+    definirTexto("res-saldo-sub", `Saldo dos meses anteriores: ${fmt(r.saldoAnterior)}`);
 
-    definirTexto("res-disponivel", fmt(disponivel));
-    definirTexto("res-disponivel-sub", `Entradas ${fmt(r.entradas)} + meses anteriores ${fmt(r.saldoAnterior)}`);
-
-    definirSaldo("res-saldo-atual", saldoAtual);
-    definirTexto("res-saldo-atual-sub", `Já descontado: pago ${fmt(r.pagos)} e guardado ${fmt(r.reserva + r.investido)}`);
-
-    definirSaldo("res-saldo-final", saldoFinal);
-    definirTexto("res-saldo-final-sub", r.abertos > 0
-        ? `Ainda falta pagar ${fmt(r.abertos)}`
+    definirSaldo("res-saldo-previsto", saldoPrevisto);
+    definirTexto("res-previsto-sub", r.abertos > 0
+        ? `Se as contas em aberto (${fmt(r.abertos)}) forem pagas`
         : "Todas as contas do mês estão pagas");
-
-    definirTexto("resumo-saidas",
-        `Total de saídas: ${fmt(r.pagos + r.abertos)} · Pago: ${fmt(r.pagos)} · Em aberto: ${fmt(r.abertos)}`);
 
     atualizarGrafico(r);
     atualizarAnual();
