@@ -593,3 +593,13 @@ table input[type="checkbox"] {
         flex-direction: column-reverse;
     }
 }
+
+.resumo-saidas {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    color: var(--sub);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+}
